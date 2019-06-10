@@ -1,0 +1,7 @@
+# authorization keys
+
+# generate a key using this command:
+# while true ; do printf $RANDOM ; done | head -c 500 | sha256sum |cut -d' ' -f1
+
+# example line from the keyfile:
+# bob 268a9b178d75bb593c04fe7f15685a8b83c603194078fb2b5d2498f740f3d46a
