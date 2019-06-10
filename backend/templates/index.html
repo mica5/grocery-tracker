@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html><head profile="http://www.w3.org/2005/10/profile">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- https://www.w3.org/2005/10/howto-favicon -->
+    <link rel="icon"
+        type="image/png"
+        href="/favicon.png?{{ key }}&v=3">
+
+    <title>Dashboard</title>
+    <style></style>
+    <script type="text/javascript">
+        {% include 'jquery-3.3.1.min.js' %}
+    </script>
+
+</head>
+<body>
+    <form
+        id="test_form"
+        action="test?{{ key }}"
+    >
+        <input type="text" placeholder="search terms" name='search_terms'><br>
+        <input type="submit">
+    </form>
+    <span id="test_span">test span</span>
+    <script type="text/javascript">
+    // jQuery AJAX submit form https://stackoverflow.com/a/6960586/2821804
+        $("#test_form").submit(function(e) {
+            $('#test_span').html("loading...");
+            var form = $(this);
+            var url = form.attr('action');
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form.serialize(),
+                success: function(data) {
+                    $("#test_span").html(data);
+                }
+            });
+
+            e.preventDefault();
+        });
+    </script>
+</body></html>
