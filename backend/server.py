@@ -121,8 +121,6 @@ class TestResource(HTTPSResource):
         return
 
 
-
-
 api = falcon.API()
 
 api.add_route('/', RootResource())
