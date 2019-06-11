@@ -6,6 +6,7 @@ import subprocess
 from dateutil import parser
 
 import jinja2
+import psycopg2
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 def log(message):
@@ -109,9 +110,59 @@ class IndexResource(HTTPSResource):
         return template
 
 
-class TestResource(HTTPSResource):
+def rows_to_html_table(cursor):
+    columns = [c.name for c in cursor.description]
+    headers = ['            <th>{}</th>'.format(c) for c in columns]
+    rows = list()
+    for row in cursor:
+        print(row)
+        rows.append('<tr>\n{}</tr>'.format('\n'.join(
+            '            <td>{}</td>'.format(v)
+            for v in row
+        )))
+    print('rows:', rows)
+    return """
+    <table id="food_search">
+        <tr>\n{headers}
+        </tr>
+        {rows}
+    </table>
+    """.format(
+        headers='\n'.join(headers),
+        rows='<br>\n'.join(rows),
+    )
+
+
+class SearchResource(HTTPSResource):
+    conn = psycopg2.connect(dbname=os.environ['USER'])
+
     def __init__(self, *args, **kwargs):
-        super(TestResource, self).__init__(*args, **kwargs)
+        super(SearchResource, self).__init__(*args, **kwargs)
+
+    def on_get(self, req, resp):
+        super(SearchResource, self).on_get(req, resp)
+        search_terms = req.params['search_terms'].split()
+        query = 'select * from groceries.foods where {};'.format(
+            ' AND '.join(
+                "food ilike '%{food}%'".format(food=st)
+                for st in search_terms
+            )
+        )
+        print(query)
+        query = 'select * from groceries.foods'
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        html_table = rows_to_html_table(cursor)
+        cursor.close()
+
+        resp.body = html_table
+        resp.content_type = falcon.MEDIA_TEXT
+        return
+
+        # data = self.parse_post_data(req)
+
+        # resp.body = str(data)
+        return
 
     def on_post(self, req, resp):
         data = self.parse_post_data(req)
@@ -125,4 +176,4 @@ api = falcon.API()
 
 api.add_route('/', RootResource())
 api.add_route('/index.html', IndexResource())
-api.add_route('/test', TestResource())
+api.add_route('/search', SearchResource())
