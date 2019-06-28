@@ -4,6 +4,7 @@ import sys
 import urllib
 import subprocess
 from dateutil import parser
+import json
 
 import jinja2
 import psycopg2
@@ -172,8 +173,69 @@ class SearchResource(HTTPSResource):
         return
 
 
+class CreateResource(HTTPSResource):
+    conn = psycopg2.connect(dbname=os.environ['USER'])
+    human_to_cpu = {
+        'date': 'dt',
+    }
+    cpu_to_human = {
+        v: k for k, v in human_to_cpu.items()
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(CreateResource, self).__init__(*args, **kwargs)
+
+    def on_post(self, req, resp):
+        data = self.parse_post_data(req)
+        response = dict()
+
+        fields = 'food location price'.split()
+        values = [
+            "%({})s".format(f) for f in fields
+        ]
+        for f in 'date count unit'.split():
+            if f in data:
+                if f in self.human_to_cpu:
+                    f2 = self.human_to_cpu[f]
+                    data[f2] = data[f]
+                    del data[f]
+                else:
+                    f2 = f
+
+                fields.append(f2)
+                values.append("%({})s".format(f2))
+
+        query = """INSERT INTO groceries.foods
+            ({fields})
+            values
+            ({values})
+        """.format(
+            fields=','.join(fields),
+            values=','.join(values),
+        )
+
+        cursor = self.conn.cursor()
+        try:
+            cursor.execute(query, data)
+        except psycopg2.DataError as e:
+            response['message'] = str(e)
+            response['success'] = False
+            self.conn.rollback()
+            resp.content_type = falcon.MEDIA_JSON
+            resp.body = json.dumps(response)
+        else:
+            response['message'] = str(data)
+            response['success'] = True
+            self.conn.commit()
+
+        resp.content_type = falcon.MEDIA_JSON
+        resp.body = json.dumps(response)
+
+
+
 api = falcon.API()
 
 api.add_route('/', RootResource())
 api.add_route('/index.html', IndexResource())
 api.add_route('/search', SearchResource())
+api.add_route('/create', CreateResource())

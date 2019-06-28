@@ -22,6 +22,53 @@
 
 </head>
 <body>
+
+<!-- data entry -->
+Insert New Food:<br>
+<form
+    action="create?{{ key }}"
+    id="insert_form"
+>
+    <table>
+        <tr><td>Food</td><td><input name="food" type="text" id="insert_food" value="a"></td></tr>
+        <tr><td>Location</td><td><input name="location" type="text" id="insert_location" value="b"></td></tr>
+        <tr><td>Date</td><td><input name="date" type="text" id="insert_date" value="c"></td></tr>
+        <tr><td>Price</td><td><input name="price" type="text" id="insert_price" value="d"></td></tr>
+        <tr><td>Count</td><td><input name="count" type="text" id="insert_count" value="e"></td></tr>
+        <tr><td>Unit</td><td><input name="unit" type="text" id="insert_unit" value="f"></td></tr>
+    </table>
+    <input type="submit"><br>
+    <pre id="insert_loading_indicator"></pre>
+</form>
+
+<script type="text/javascript">
+// jQuery AJAX submit form https://stackoverflow.com/a/6960586/2821804
+    $("#insert_form").submit(function(e) {
+        $('#insert_loading_indicator').html("loading...");
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: form.serialize(),
+            success: function(data) {
+                $("#insert_loading_indicator").html(data.message);
+                if (data.success) {
+                    $("#insert_food").val("");
+                    $("#insert_price").val("");
+                    $("#insert_count").val("");
+                    $("#insert_unit").val("");
+                }
+            }
+        });
+
+        e.preventDefault();
+    });
+</script>
+
+
+<br>
+<!-- data search -->
     <form
         id="test_form"
         action="search?{{ key }}"
