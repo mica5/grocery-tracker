@@ -19,6 +19,16 @@
     <script type="text/javascript">
         {% include 'jquery-3.3.1.min.js' %}
     </script>
+    <script type="text/javascript">
+        var delete_food_by_fid = function(fid) {
+            $.ajax({
+                type: "DELETE",
+                url: "/food?{{ key }}",
+                data: {fid: fid}
+                // success: reload_daily_tasks
+            });
+        };
+    </script>
 
 </head>
 <body>
@@ -26,13 +36,13 @@
 <!-- data entry -->
 Insert New Food:<br>
 <form
-    action="create?{{ key }}"
+    action="food?{{ key }}"
     id="insert_form"
 >
     <table>
-        <tr><td>Food</td><td><input name="food" type="text" id="insert_food" value="a"></td></tr>
         <tr><td>Location</td><td><input name="location" type="text" id="insert_location" value="b"></td></tr>
         <tr><td>Date</td><td><input name="date" type="text" id="insert_date" value="c"></td></tr>
+        <tr><td>Food</td><td><input name="food" type="text" id="insert_food" value="a"></td></tr>
         <tr><td>Price</td><td><input name="price" type="text" id="insert_price" value="d"></td></tr>
         <tr><td>Count</td><td><input name="count" type="text" id="insert_count" value="e"></td></tr>
         <tr><td>Unit</td><td><input name="unit" type="text" id="insert_unit" value="f"></td></tr>
@@ -71,7 +81,7 @@ Insert New Food:<br>
 <!-- data search -->
     <form
         id="test_form"
-        action="search?{{ key }}"
+        action="food?{{ key }}"
     >
         <input
             type="text"

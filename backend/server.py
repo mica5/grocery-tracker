@@ -113,15 +113,20 @@ class IndexResource(HTTPSResource):
 
 def rows_to_html_table(cursor):
     columns = [c.name for c in cursor.description]
+    original_columns = columns.copy()
+    columns.append('actions')
     headers = ['            <th>{}</th>'.format(c) for c in columns]
     rows = list()
     for row in cursor:
-        print(row)
+        # print(row)
+        row_dict = dict(zip(original_columns, row))
+        row = list(row)
+        row.append('<input type="button" value="Delete" onclick="delete_food_by_fid({fid})">'.format(fid=row_dict['fid']))
         rows.append('<tr>\n{}</tr>'.format('\n'.join(
             '            <td>{}</td>'.format(v)
             for v in row
         )))
-    print('rows:', rows)
+    # print('rows:', rows)
     return """
     <table id="food_search">
         <tr>\n{headers}
@@ -134,23 +139,32 @@ def rows_to_html_table(cursor):
     )
 
 
-class SearchResource(HTTPSResource):
+class FoodResource(HTTPSResource):
     conn = psycopg2.connect(dbname=os.environ['USER'])
+    human_to_cpu = {
+        'date': 'dt',
+    }
+    cpu_to_human = {
+        v: k for k, v in human_to_cpu.items()
+    }
 
     def __init__(self, *args, **kwargs):
-        super(SearchResource, self).__init__(*args, **kwargs)
+        super(FoodResource, self).__init__(*args, **kwargs)
 
     def on_get(self, req, resp):
-        super(SearchResource, self).on_get(req, resp)
+        super(FoodResource, self).on_get(req, resp)
         search_terms = req.params['search_terms'].split()
-        query = 'select * from groceries.foods where {};'.format(
+        query = '''SELECT
+            *
+            , '$'||round(price/count, 3)||'/'||unit AS price_per_unit
+        FROM groceries.foods
+        WHERE {};'''.format(
             ' AND '.join(
                 "food ilike '%{food}%'".format(food=st)
                 for st in search_terms
             )
         )
-        print(query)
-        query = 'select * from groceries.foods'
+        # query = 'select * from groceries.foods'
         cursor = self.conn.cursor()
         cursor.execute(query)
         html_table = rows_to_html_table(cursor)
@@ -167,26 +181,6 @@ class SearchResource(HTTPSResource):
 
     def on_post(self, req, resp):
         data = self.parse_post_data(req)
-
-        resp.content_type = falcon.MEDIA_TEXT
-        resp.body = str(data)
-        return
-
-
-class CreateResource(HTTPSResource):
-    conn = psycopg2.connect(dbname=os.environ['USER'])
-    human_to_cpu = {
-        'date': 'dt',
-    }
-    cpu_to_human = {
-        v: k for k, v in human_to_cpu.items()
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(CreateResource, self).__init__(*args, **kwargs)
-
-    def on_post(self, req, resp):
-        data = self.parse_post_data(req)
         response = dict()
 
         fields = 'food location price'.split()
@@ -194,7 +188,7 @@ class CreateResource(HTTPSResource):
             "%({})s".format(f) for f in fields
         ]
         for f in 'date count unit'.split():
-            if f in data:
+            if f in data and data[f]:
                 if f in self.human_to_cpu:
                     f2 = self.human_to_cpu[f]
                     data[f2] = data[f]
@@ -227,9 +221,42 @@ class CreateResource(HTTPSResource):
             response['message'] = str(data)
             response['success'] = True
             self.conn.commit()
+        finally:
+            cursor.close()
 
         resp.content_type = falcon.MEDIA_JSON
         resp.body = json.dumps(response)
+
+    def on_delete(self, req, resp):
+        data = self.parse_post_data(req)
+
+        response = dict()
+
+        cursor = self.conn.cursor()
+        query = '''DELETE FROM groceries.foods
+            WHERE fid=%(fid)s;
+        '''
+        try:
+            cursor.execute(query, data)
+        except psycopg2.DataError as e:
+            response['message'] = str(e)
+            response['success'] = False
+            self.conn.rollback()
+            resp.content_type = falcon.MEDIA_JSON
+            resp.body = json.dumps(response)
+        else:
+            response['message'] = str(data)
+            response['success'] = True
+            self.conn.commit()
+        finally:
+            cursor.close()
+
+
+class CreateResource(HTTPSResource):
+    conn = psycopg2.connect(dbname=os.environ['USER'])
+
+    def __init__(self, *args, **kwargs):
+        super(CreateResource, self).__init__(*args, **kwargs)
 
 
 
@@ -237,5 +264,4 @@ api = falcon.API()
 
 api.add_route('/', RootResource())
 api.add_route('/index.html', IndexResource())
-api.add_route('/search', SearchResource())
-api.add_route('/create', CreateResource())
+api.add_route('/food', FoodResource())
