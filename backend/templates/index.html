@@ -76,11 +76,10 @@ Insert New Food:<br>
     });
 </script>
 
-
 <br>
 <!-- data search -->
     <form
-        id="test_form"
+        id="search_food_form"
         action="food?{{ key }}"
     >
         <input
@@ -92,11 +91,11 @@ Insert New Food:<br>
         ><br>
         <input type="submit">
     </form>
-    <span id="test_span">test span</span>
+    <div id="search_results_box"></div>
     <script type="text/javascript">
     // jQuery AJAX submit form https://stackoverflow.com/a/6960586/2821804
-        $("#test_form").submit(function(e) {
-            $('#test_span').html("loading...");
+        $("#search_food_form").submit(function(e) {
+            $('#search_results_box').html("loading...");
             var form = $(this);
             var url = form.attr('action');
             $.ajax({
@@ -104,7 +103,23 @@ Insert New Food:<br>
                 url: url,
                 data: form.serialize(),
                 success: function(data) {
-                    $("#test_span").html(data);
+                    $("#search_results_box").html(data);
+                    $(".update_food").submit(function(e) {
+                        e.preventDefault();
+                        // $('#search_results_box').html("loading...");
+                        var form = $(this);
+                        var url = form.attr('action');
+                        $.ajax({
+                            type: "PUT",
+                            url: url,
+                            data: form.serialize(),
+                            success: function(data) {
+                                // $("#search_results_box").html(data);
+                                // $(".update_food").submit();
+                            }
+                        });
+
+                    });
                 }
             });
 

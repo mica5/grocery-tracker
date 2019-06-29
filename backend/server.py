@@ -111,34 +111,6 @@ class IndexResource(HTTPSResource):
         return template
 
 
-def rows_to_html_table(cursor):
-    columns = [c.name for c in cursor.description]
-    original_columns = columns.copy()
-    columns.append('actions')
-    headers = ['            <th>{}</th>'.format(c) for c in columns]
-    rows = list()
-    for row in cursor:
-        # print(row)
-        row_dict = dict(zip(original_columns, row))
-        row = list(row)
-        row.append('<input type="button" value="Delete" onclick="delete_food_by_fid({fid})">'.format(fid=row_dict['fid']))
-        rows.append('<tr>\n{}</tr>'.format('\n'.join(
-            '            <td>{}</td>'.format(v)
-            for v in row
-        )))
-    # print('rows:', rows)
-    return """
-    <table id="food_search">
-        <tr>\n{headers}
-        </tr>
-        {rows}
-    </table>
-    """.format(
-        headers='\n'.join(headers),
-        rows='<br>\n'.join(rows),
-    )
-
-
 class FoodResource(HTTPSResource):
     conn = psycopg2.connect(dbname=os.environ['USER'])
     human_to_cpu = {
@@ -150,6 +122,64 @@ class FoodResource(HTTPSResource):
 
     def __init__(self, *args, **kwargs):
         super(FoodResource, self).__init__(*args, **kwargs)
+
+    def rows_to_html_table(self, cursor, req):
+        key = self.get_key_param_str(req)
+        columns = [c.name for c in cursor.description]
+        original_columns = columns.copy()
+        # print('original_columns:', original_columns)
+        columns.append('actions')
+        columns.remove('deleted')
+        headers = ['            <th>{}</th>'.format(c) for c in columns]
+        rows = list()
+        for row in cursor:
+            # print(row)
+            row_dict = dict(zip(original_columns, row))
+
+            fid = row_dict['fid']
+
+            this_row = list()
+            this_row.append(f'''
+                <td>
+                    <form id="form{fid}" action="food?{key}" class="update_food"></form>
+                    {row_dict["fid"]}
+                    <input form="form{fid}" type="hidden" name="fid" value="{row_dict["fid"]}">
+                </td>
+            '''.format(fid=fid, key=key))
+            this_row.append(f'<td><input form="form{fid}" type="text" name="food" value="{row_dict["food"]}"></td>')
+            this_row.append(f'<td>{row_dict["dt"]}</td>')
+            this_row.append(f'<td><input form="form{fid}" type="text" name="location" value="{row_dict["location"]}"></td>')
+            this_row.append(f'<td><input form="form{fid}" type="text" name="price" value="{row_dict["price"]}"></td>')
+            this_row.append(f'<td><input form="form{fid}" type="text" name="count" value="{row_dict["count"]}"></td>')
+            this_row.append(f'<td><input form="form{fid}" type="text" name="unit" value="{row_dict["unit"]}"></td>')
+            # this_row.append(f'<td>{row_dict["deleted"]}</td>')
+            this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
+            this_row.append(f'''<td>
+                <input type="button" value="Delete" onclick="delete_food_by_fid({row_dict["fid"]})">
+                <input form="form{fid}" type="submit" value="Update">
+            </td>''')
+
+            # print('row:', row)
+            # print('row_dict:', row_dict)
+            rows.append('''<tr>\n{row}</tr>'''.format(
+                fid=row_dict["fid"],
+                row='\n'.join(
+                    '            {}'.format(v)
+                    for v in this_row
+                ),
+                key=key,
+            ))
+        # print('rows:', rows[0])
+        return """
+        <table id="food_search">
+            <tr>\n{headers}
+            </tr>
+            {rows}
+        </table>
+        """.format(
+            headers='\n'.join(headers),
+            rows='\n'.join(rows),
+        )
 
     def on_get(self, req, resp):
         super(FoodResource, self).on_get(req, resp)
@@ -166,8 +196,12 @@ class FoodResource(HTTPSResource):
         )
         # query = 'select * from groceries.foods'
         cursor = self.conn.cursor()
-        cursor.execute(query)
-        html_table = rows_to_html_table(cursor)
+        try:
+            cursor.execute(query)
+        except:
+            self.conn.rollback()
+            return
+        html_table = self.rows_to_html_table(cursor, req)
         cursor.close()
 
         resp.body = html_table
@@ -223,9 +257,37 @@ class FoodResource(HTTPSResource):
             self.conn.commit()
         finally:
             cursor.close()
+            resp.content_type = falcon.MEDIA_JSON
+            resp.body = json.dumps(response)
 
-        resp.content_type = falcon.MEDIA_JSON
-        resp.body = json.dumps(response)
+    def on_put(self, req, resp):
+        response = dict()
+        data = self.parse_post_data(req)
+
+        columns = data.keys()
+
+        query = """UPDATE groceries.foods
+            SET {columns}
+            WHERE fid=%(fid)s
+        """.format(
+            columns=','.join(['{c}=%({c})s'.format(c=c) for c in columns]),
+        )
+
+        cursor = self.conn.cursor()
+        try:
+            cursor.execute(query, data)
+        except psycopg2.DataError as e:
+            response['message'] = str(e)
+            response['success'] = False
+            self.conn.rollback()
+        else:
+            response['message'] = str(data)
+            response['success'] = True
+            self.conn.commit()
+        finally:
+            cursor.close()
+            resp.content_type = falcon.MEDIA_JSON
+            resp.body = json.dumps(response)
 
     def on_delete(self, req, resp):
         data = self.parse_post_data(req)
@@ -243,13 +305,13 @@ class FoodResource(HTTPSResource):
             response['success'] = False
             self.conn.rollback()
             resp.content_type = falcon.MEDIA_JSON
-            resp.body = json.dumps(response)
         else:
             response['message'] = str(data)
             response['success'] = True
             self.conn.commit()
         finally:
             cursor.close()
+            resp.body = json.dumps(response)
 
 
 class CreateResource(HTTPSResource):
