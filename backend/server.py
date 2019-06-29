@@ -189,7 +189,7 @@ class FoodResource(HTTPSResource):
             *
             , '$'||round(price/count, 3)||'/'||unit AS price_per_unit
         FROM groceries.foods
-        WHERE {};'''.format(
+        WHERE NOT DELETED AND {};'''.format(
             ' AND '.join(
                 "food ilike '%{food}%'".format(food=st)
                 for st in search_terms
@@ -296,7 +296,8 @@ class FoodResource(HTTPSResource):
         response = dict()
 
         cursor = self.conn.cursor()
-        query = '''DELETE FROM groceries.foods
+        query = '''UPDATE groceries.foods
+            SET deleted=true
             WHERE fid=%(fid)s;
         '''
         try:
