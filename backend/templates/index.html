@@ -62,7 +62,8 @@ Insert New Food:<br>
             url: url,
             data: form.serialize(),
             success: function(data) {
-                $("#insert_loading_indicator").html(data.message);
+                // data.message
+                $("#insert_loading_indicator").html("Inserted successfully!");
                 if (data.success) {
                     $("#insert_food").val("");
                     $("#insert_price").val("");
@@ -89,7 +90,7 @@ Insert New Food:<br>
             name='search_terms'
             value='roma tomato'
         ><br>
-        <input type="submit">
+        <input type="submit" id="submit_search_food">
     </form>
     <div id="search_results_box"></div>
     <script type="text/javascript">

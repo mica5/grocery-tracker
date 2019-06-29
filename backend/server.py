@@ -139,6 +139,7 @@ class FoodResource(HTTPSResource):
             fid = row_dict['fid']
 
             this_row = list()
+            # https://stackoverflow.com/questions/1249688/html-is-it-possible-to-have-a-form-tag-in-each-table-row-in-a-xhtml-valid-way
             this_row.append(f'''
                 <td>
                     <form id="form{fid}" action="food?{key}" class="update_food"></form>
@@ -156,7 +157,7 @@ class FoodResource(HTTPSResource):
             this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
             this_row.append(f'''<td>
                 <input type="button" value="Delete" onclick="delete_food_by_fid({row_dict["fid"]})">
-                <input form="form{fid}" type="submit" value="Update">
+                <input form="form{fid}" type="submit" value="Update" class="update_food_button">
             </td>''')
 
             # print('row:', row)
