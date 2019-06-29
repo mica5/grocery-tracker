@@ -19,5 +19,6 @@ CREATE TABLE IF NOT EXISTS groceries.foods (
     , price numeric(7, 2)
     , count decimal
     , unit varchar(10)
+    , deleted boolean default false
 );
 EOF
