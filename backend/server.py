@@ -130,8 +130,13 @@ class FoodResource(HTTPSResource):
         columns = [c.name for c in cursor.description]
         original_columns = columns.copy()
         # print('original_columns:', original_columns)
+
         columns.append('actions')
         columns.remove('deleted')
+
+        columns.remove('fid')
+        columns.append('fid')
+
         headers = ['            <th>{}</th>'.format(c) for c in columns]
         rows = list()
         for row in cursor:
@@ -142,25 +147,35 @@ class FoodResource(HTTPSResource):
 
             this_row = list()
             # https://stackoverflow.com/questions/1249688/html-is-it-possible-to-have-a-form-tag-in-each-table-row-in-a-xhtml-valid-way
+
+            # price_per_unit
+            this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
+            # food
             this_row.append(f'''
                 <td>
                     <form id="form{fid}" action="food?{key}" class="update_food"></form>
-                    {row_dict["fid"]}
+                    <input form="form{fid}" type="text" name="food" value="{row_dict["food"]}">
                     <input form="form{fid}" type="hidden" name="fid" value="{row_dict["fid"]}">
                 </td>
-            '''.format(fid=fid, key=key))
-            this_row.append(f'<td><input form="form{fid}" type="text" name="food" value="{row_dict["food"]}"></td>')
-            this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
+            ''')
+
+            # dt
             this_row.append(f'<td>{row_dict["dt"]}</td>')
+            # location
             this_row.append(f'<td><input form="form{fid}" type="text" name="location" value="{row_dict["location"]}"></td>')
+            # price
             this_row.append(f'<td><input form="form{fid}" type="text" name="price" value="{row_dict["price"]}"></td>')
+            # count
             this_row.append(f'<td><input form="form{fid}" type="text" name="count" value="{row_dict["count"]}"></td>')
+            # unit
             this_row.append(f'<td><input form="form{fid}" type="text" name="unit" value="{row_dict["unit"]}"></td>')
             # this_row.append(f'<td>{row_dict["deleted"]}</td>')
             this_row.append(f'''<td>
                 <input type="button" value="Delete" onclick="delete_food_by_fid({row_dict["fid"]})">
                 <input form="form{fid}" type="submit" value="Update" class="update_food_button">
             </td>''')
+            # fid
+            this_row.append(f'''<td>{row_dict["fid"]}</td>'''.format(fid=fid, key=key))
 
             # print('row:', row)
             # print('row_dict:', row_dict)
@@ -188,10 +203,11 @@ class FoodResource(HTTPSResource):
         super(FoodResource, self).on_get(req, resp)
         search_terms = req.params['search_terms'].split()
         query = '''SELECT
-            *
-            , '$'||round(price/count, 3)||'/'||unit AS price_per_unit
+            '$'||round(price/count, 3)||'/'||unit AS price_per_unit
+            , *
         FROM groceries.foods
-        WHERE NOT DELETED AND {};'''.format(
+        WHERE NOT DELETED AND {}
+        ORDER BY food, price_per_unit asc;'''.format(
             ' AND '.join(
                 "food ilike '%{food}%'".format(food=st)
                 for st in search_terms
