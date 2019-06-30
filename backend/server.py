@@ -17,6 +17,8 @@ sys.path.insert(0, this_dir)
 
 from helpers import load_keys
 
+def get_db_connection():
+    return psycopg2.connect('postgres://localhost')
 
 class HTTPSResource(object):
     """docstring for HTTPSResource"""
@@ -112,7 +114,7 @@ class IndexResource(HTTPSResource):
 
 
 class FoodResource(HTTPSResource):
-    conn = psycopg2.connect(dbname=os.environ['USER'])
+    conn = get_db_connection()
     human_to_cpu = {
         'date': 'dt',
     }
@@ -317,7 +319,7 @@ class FoodResource(HTTPSResource):
 
 
 class CreateResource(HTTPSResource):
-    conn = psycopg2.connect(dbname=os.environ['USER'])
+    conn = get_db_connection()
 
     def __init__(self, *args, **kwargs):
         super(CreateResource, self).__init__(*args, **kwargs)

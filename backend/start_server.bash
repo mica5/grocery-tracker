@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-gunicorn \
+cd $(dirname $0)
+
+/home/mica/anaconda3/envs/blackserver/bin/gunicorn \
     server:api \
     --timeout 0 \
     --reload \
@@ -8,5 +10,6 @@ gunicorn \
     --access-logfile - \
     --error-logfile - \
     --log-level debug \
-    --keyfile /Users/mica/.ssh/mica_CA/localhost/localhost.key \
-    --certfile /Users/mica/.ssh/mica_CA/localhost/localhost.crt
+    --keyfile /home/mica/.ssh/black.key \
+    --certfile /home/mica/.ssh/black.crt \
+    --bind 0.0.0.0:$(cat port.txt)
