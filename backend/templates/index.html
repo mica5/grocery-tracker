@@ -33,6 +33,20 @@
 </head>
 <body>
 
+<script type="text/javascript">
+    var lan_ip = '192.168.1.72';
+    var remote_ip = '99.46.140.205';
+    var go_to_remote = function() {
+        window.location = window.location.href.replace(lan_ip, remote_ip);
+    };
+    var go_to_lan = function() {
+        window.location = window.location.href.replace(remote_ip, lan_ip);
+    };
+</script>
+
+<input type="button" onclick="go_to_remote();" value="Go to remote"><br>
+<input type="button" onclick="go_to_lan();" value="Go to LAN"><br>
+
 <!-- data entry -->
 Insert New Food:<br>
 <form
