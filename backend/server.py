@@ -160,7 +160,7 @@ class FoodResource(HTTPSResource):
             ''')
 
             # dt
-            this_row.append(f'<td>{row_dict["dt"]}</td>')
+            this_row.append(f'<td><input form="form{fid}" type="text" name="location" value="{row_dict["dt"]}"></td>')
             # location
             this_row.append(f'<td><input form="form{fid}" type="text" name="location" value="{row_dict["location"]}"></td>')
             # price
