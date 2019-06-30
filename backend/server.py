@@ -150,13 +150,13 @@ class FoodResource(HTTPSResource):
                 </td>
             '''.format(fid=fid, key=key))
             this_row.append(f'<td><input form="form{fid}" type="text" name="food" value="{row_dict["food"]}"></td>')
+            this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
             this_row.append(f'<td>{row_dict["dt"]}</td>')
             this_row.append(f'<td><input form="form{fid}" type="text" name="location" value="{row_dict["location"]}"></td>')
             this_row.append(f'<td><input form="form{fid}" type="text" name="price" value="{row_dict["price"]}"></td>')
             this_row.append(f'<td><input form="form{fid}" type="text" name="count" value="{row_dict["count"]}"></td>')
             this_row.append(f'<td><input form="form{fid}" type="text" name="unit" value="{row_dict["unit"]}"></td>')
             # this_row.append(f'<td>{row_dict["deleted"]}</td>')
-            this_row.append(f'<td>{row_dict["price_per_unit"]}</td>')
             this_row.append(f'''<td>
                 <input type="button" value="Delete" onclick="delete_food_by_fid({row_dict["fid"]})">
                 <input form="form{fid}" type="submit" value="Update" class="update_food_button">
